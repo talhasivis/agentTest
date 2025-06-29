@@ -9,7 +9,7 @@
     .container { max-width: 400px; margin: auto; }
     label, button { display: block; margin-top: 10px; }
     input, select { width: 100%; padding: 8px; margin-top: 5px; }
-    pre { background: #f4f4f4; padding: 10px; margin-top: 20px; overflow: auto; }
+    pre { background: #f4f4f4; padding: 10px; margin-top: 20px; overflow: auto; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -17,54 +17,66 @@
     <h2>Loop Başlat</h2>
     <label for="channel">Channel ID:</label>
     <select id="channel">
-      <option value="686006a5d0832258b0147d6d">Channel B</option>
+      <option value="685ff95ab33f57567824af59">Channel B</option>
     </select>
 
     <label for="content">Mesaj İçeriği:</label>
     <input type="text" id="content" placeholder="Mesajınızı yazın" />
 
+    <label for="duration">Test Süresi (saniye):</label>
+    <input type="number" id="duration" placeholder="Kaç saniye sürecek?" min="1" />
+
     <button id="startBtn">Başlat</button>
 
-    <h3>Sunucu Yanıtı:</h3>
+    <h3>Sunucu Yanıtları:</h3>
     <pre id="response"></pre>
   </div>
 
   <script>
-    document.getElementById('startBtn').addEventListener('click', async () => {
+    const startBtn = document.getElementById('startBtn');
+    const responseBox = document.getElementById('response');
+
+    startBtn.addEventListener('click', () => {
       const channelID = document.getElementById('channel').value;
       const content = document.getElementById('content').value;
-      const url = `https://winter-smoke-3d0e.talha-sivis.workers.dev/incoming/start?channelID=${channelID}`;
-
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            clientInfo: {
-              id: 'USER_B',
-              name: 'John',
-              surname: 'Doe',
-              phone: '+1234567890'
-            },
-            message: {
-              content,
-              type: 'TEXT'
-            }
-          })
-        });
-        const text = await res.text();
-        let data = {};
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          console.warn('Non-JSON response:', text);
-        }
-        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        document.getElementById('response').textContent = err.message;
+      const duration = parseInt(document.getElementById('duration').value, 10);
+      if (!content || isNaN(duration) || duration < 1) {
+        alert('Lütfen geçerli bir mesaj içeriği ve süre girin.');
+        return;
       }
+      startBtn.disabled = true;
+      responseBox.textContent = '';
+
+      const url = `https://winter-smoke-3d0e.talha-sivis.workers.dev/incoming/start?channelID=${channelID}`;
+      const endTime = Date.now() + duration * 1000;
+
+      const interval = setInterval(async () => {
+        if (Date.now() > endTime) {
+          clearInterval(interval);
+          startBtn.disabled = false;
+          responseBox.textContent += '\n[Test tamamlandı]';
+          return;
+        }
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-End-Time': endTime.toString()
+            },
+            body: JSON.stringify({
+              clientInfo: { id: 'USER_B', name: 'John', surname: 'Doe', phone: '+1234567890' },
+              message: { content, type: 'TEXT' }
+            })
+          });
+          const text = await res.text();
+          let data = {};
+          try { data = JSON.parse(text); } catch (e) { /* non-JSON */ }
+          responseBox.textContent += JSON.stringify(data) + '\n';
+        } catch (err) {
+          responseBox.textContent += `Error: ${err.message}\n`;
+        }
+      }, 1000);
     });
   </script>
 </body>
