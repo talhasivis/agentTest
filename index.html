@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loop Başlatıcı</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .container { max-width: 400px; margin: auto; }
+    label, button { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; }
+    pre { background: #f4f4f4; padding: 10px; margin-top: 20px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Loop Başlat</h2>
+    <label for="channel">Channel ID:</label>
+    <select id="channel">
+      <option value="685ff95ab33f57567824af59">Channel B</option>
+    </select>
+
+    <label for="content">Mesaj İçeriği:</label>
+    <input type="text" id="content" placeholder="Mesajınızı yazın" />
+
+    <button id="startBtn">Başlat</button>
+
+    <h3>Sunucu Yanıtı:</h3>
+    <pre id="response"></pre>
+  </div>
+
+  <script>
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      const channelID = document.getElementById('channel').value;
+      const content = document.getElementById('content').value;
+      const url = `https://winter-smoke-3d0e.talha-sivis.workers.dev/incoming/start?channelID=${channelID}`;
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            clientInfo: {
+              id: 'USER_B',
+              name: 'John',
+              surname: 'Doe',
+              phone: '+1234567890'
+            },
+            message: {
+              content,
+              type: 'TEXT'
+            }
+          })
+        });
+        const text = await res.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.warn('Non-JSON response:', text);
+        }
+        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('response').textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
